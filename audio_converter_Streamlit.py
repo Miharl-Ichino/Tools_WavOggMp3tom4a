@@ -100,10 +100,16 @@ def main():
     # サイドバーで設定
     st.sidebar.header("変換設定")
     
-    # 音質設定
+    # 拡張された音質設定
     quality_options = {
+        "32k": "32 kbps (最低品質・最高圧縮)",
+        "48k": "48 kbps (低品質・高圧縮)",
+        "64k": "64 kbps (低品質)",
+        "96k": "96 kbps (中低品質)",
         "128k": "128 kbps (標準)",
+        "160k": "160 kbps (中高品質)",
         "192k": "192 kbps (高品質)",
+        "224k": "224 kbps (高品質+)",
         "256k": "256 kbps (最高品質)",
         "320k": "320 kbps (最高品質+)"
     }
@@ -112,8 +118,32 @@ def main():
         "音質設定",
         options=list(quality_options.keys()),
         format_func=lambda x: quality_options[x],
-        index=1  # 192kをデフォルトに
+        index=4  # 128kをデフォルトに
     )
+    
+    # 音質説明を追加
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("💡 音質ガイド")
+    st.sidebar.markdown("""
+    **用途別推奨設定:**
+    - 🗣️ **音声通話・録音**: 32k-64k
+    - 📻 **ラジオ・ポッドキャスト**: 64k-96k
+    - 🎵 **音楽（標準）**: 128k-160k
+    - 🎧 **音楽（高品質）**: 192k-256k
+    - 📀 **アーカイブ用**: 320k
+    """)
+    
+    # ファイルサイズ予測
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 ファイルサイズ予測")
+    
+    bitrate_kb = int(quality[:-1])  # "128k" -> 128
+    st.sidebar.markdown(f"""
+    **{quality} ({quality_options[quality]})**
+    - 1分間: 約 {bitrate_kb * 7.5 / 1000:.1f} MB
+    - 10分間: 約 {bitrate_kb * 75 / 1000:.1f} MB
+    - 1時間: 約 {bitrate_kb * 450 / 1000:.1f} MB
+    """)
     
     # FFmpegの確認
     if 'ffmpeg_checked' not in st.session_state:
@@ -200,7 +230,13 @@ def convert_files(uploaded_files, quality, ffmpeg_path):
                 
                 if success:
                     converted_files.append(output_path)
+                    # ファイルサイズを表示
+                    input_size = os.path.getsize(input_file_path)
+                    output_size = os.path.getsize(output_path)
+                    compression_ratio = (1 - output_size / input_size) * 100
+                    
                     st.success(f"✅ {uploaded_file.name} → {Path(output_path).name}")
+                    st.info(f"📊 {input_size:,} bytes → {output_size:,} bytes (圧縮率: {compression_ratio:.1f}%)")
                 else:
                     errors.append(f"❌ {uploaded_file.name}: {error_msg}")
                     st.error(f"❌ {uploaded_file.name} の変換に失敗しました")
