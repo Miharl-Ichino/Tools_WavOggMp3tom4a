@@ -1,0 +1,3 @@
+streamlit
+ffmpeg-python
+configparser
